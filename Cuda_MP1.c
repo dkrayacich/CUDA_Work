@@ -1,5 +1,9 @@
-#include "cuda_runtime.h"
+//David Krayacich 20381405
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include <stdio.h>
+#define BLOCK_WIDTH 16
 
 int main(int argc, char* argv[]) {
 	int dev_count;
@@ -30,8 +34,7 @@ int main(int argc, char* argv[]) {
 			dp.maxThreadsDim[0], dp.maxThreadsDim[1], dp.maxThreadsDim[2], dp.maxGridSize[0],
 			dp.maxGridSize[1], dp.maxGridSize[2]);
 
+
+
 	}
 }
-
-
-void matMult()
