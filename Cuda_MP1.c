@@ -14,9 +14,9 @@ int main(int argc, char* argv[]) {
 			"Num SMs: %d \n"
 			"Num Cores: %d \n"
 			"Warp Size: %d \n"
-			"Global Mem: %d \n"
-			"Constant Mem: %d \n"
-			"Shared Mem Per Block: %d \n"
+			"Global Mem: %zu \n"
+			"Constant Mem: %zu \n"
+			"Shared Mem Per Block: %zu \n"
 			"Num Regs Available Per Block: %d \n"
 			"Max Threads Per Block: %d \n"
 			"Block X Dim: %d \n"
@@ -25,7 +25,9 @@ int main(int argc, char* argv[]) {
 			"Grid X Dim: %d \n"
 			"Grid Y Dim: %d \n"
 			"Grid Z Dim: %d \n",
-			d, dp.clockRate, dp.multiProcessorCount);
+			d, dp.clockRate, dp.multiProcessorCount, d, dp.warpSize, dp.totalGlobalMem,
+			dp.totalConstMem, dp.sharedMemPerBlock, dp.regsPerBlock, dp.maxThreadsPerBlock,
+			dp.maxThreadsDim(0), ;
 	}
 }
 
