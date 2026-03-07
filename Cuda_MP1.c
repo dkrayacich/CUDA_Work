@@ -27,7 +27,11 @@ int main(int argc, char* argv[]) {
 			"Grid Z Dim: %d \n",
 			d, dp.clockRate, dp.multiProcessorCount, d, dp.warpSize, dp.totalGlobalMem,
 			dp.totalConstMem, dp.sharedMemPerBlock, dp.regsPerBlock, dp.maxThreadsPerBlock,
-			dp.maxThreadsDim(0), ;
+			dp.maxThreadsDim[0], dp.maxThreadsDim[1], dp.maxThreadsDim[2], dp.maxGridSize[0],
+			dp.maxGridSize[1], dp.maxGridSize[2]);
+
 	}
 }
 
+
+void matMult()
