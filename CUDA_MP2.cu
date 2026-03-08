@@ -4,7 +4,7 @@
 #include <device_launch_parameters.h>
 #include <stdlib.h>
 #include <stdio.h>
-#define BLOCK_WIDTH 15
+#define BLOCK_WIDTH 1
 
 __global__ void matMulKernel(float* M, float* N, float* P, int Width) {
 
@@ -23,7 +23,7 @@ __global__ void matMulKernel(float* M, float* N, float* P, int Width) {
 }
 
 __global__ void matMulKernelB(float* M, float* N, float* P, int Width) {
-
+	//this kernel is for the case of 1 block with 1 thread and therefore this thread must do compute the entire matrix multiplication
 	for (int i = 0; i < Width; i++) {
 		for (int j = 0; j < Width; j++) {
 			float Pvalue = 0;
@@ -55,20 +55,8 @@ void matMul(float* M, float* N, float* P, int Width) {
 	dim3 dimGrid(NumBlocks, NumBlocks);
 	dim3 dimBlock(BLOCK_WIDTH, BLOCK_WIDTH);
 
-	cudaEvent_t start, stop;
-	cudaEventCreate(&start);
-	cudaEventCreate(&stop);
-	cudaDeviceSynchronize();
-
-	cudaEventRecord(start, 0);
-	//matMulKernel << <dimGrid, dimBlock >> > (d_M, d_N, d_P, Width); //for regular matrix mult
-	matMulKernelB << <1, 1 >> > (d_M, d_N, d_P, Width); //for case of 1 block with with one thread
-	cudaEventRecord(stop, 0);
-	cudaEventSynchronize(stop);
-
-	float time;
-	cudaEventElapsedTime(&time, start, stop);
-	printf("Mat Mult Kernel Time (ms): %f \n", time);
+	matMulKernel << <dimGrid, dimBlock >> > (d_M, d_N, d_P, Width); //for regular matrix mult
+	//matMulKernelB << <1, 1 >> > (d_M, d_N, d_P, Width); //for case of 1 block with with one thread
 
 	cudaMemcpy(P, d_P, size, cudaMemcpyDeviceToHost);
 	
@@ -78,7 +66,7 @@ void matMul(float* M, float* N, float* P, int Width) {
 }
 
 int main(int argc, char* argv[]) {
-	int Width = 300;
+	int Width = 750;
 	int size = Width * Width * sizeof(float);
 	float* M = (float*)malloc(size * sizeof(float));
 	float* N = (float*)malloc(size * sizeof(float));
@@ -92,6 +80,13 @@ int main(int argc, char* argv[]) {
 
 	matMul(M, N, P_g, Width);
 
+	cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+	cudaDeviceSynchronize();
+
+	cudaEventRecord(start, 0);
+
 	for (int i = 0; i < Width; i++) {
 		for (int j = 0; j < Width; j++) {
 			for (int k = 0; k < Width; k++) {
@@ -99,6 +94,12 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	}
+	cudaEventRecord(stop, 0);
+	cudaEventSynchronize(stop);
+
+	float time;
+	cudaEventElapsedTime(&time, start, stop);
+	printf("Mat Mult CPU (ms): %f \n", time);
 
 	cudaDeviceSynchronize();
 	int failed = 0;
