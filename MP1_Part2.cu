@@ -4,7 +4,10 @@
 #include <device_launch_parameters.h>
 #include <stdlib.h>
 #include <stdio.h>
-#define BLOCK_WIDTH 1
+#define BLOCK_WIDTH 25
+
+float test_res[3];
+int rep = 0;
 
 __global__ void matMulKernel(float* M, float* N, float* P, int Width) {
 
@@ -55,18 +58,32 @@ void matMul(float* M, float* N, float* P, int Width) {
 	dim3 dimGrid(NumBlocks, NumBlocks);
 	dim3 dimBlock(BLOCK_WIDTH, BLOCK_WIDTH);
 
+	cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+	cudaDeviceSynchronize();
+
+	cudaEventRecord(start, 0);
 	matMulKernel << <dimGrid, dimBlock >> > (d_M, d_N, d_P, Width); //for regular matrix mult
 	//matMulKernelB << <1, 1 >> > (d_M, d_N, d_P, Width); //for case of 1 block with with one thread
+	cudaEventRecord(stop, 0);
+	cudaEventSynchronize(stop);
 
-	cudaMemcpy(P, d_P, size, cudaMemcpyDeviceToHost);
+	float time;
+	cudaEventElapsedTime(&time, start, stop);
+	test_res[rep] = time;
+	rep++;
+	printf("Mat Mul kernel Time (ms): %f \n", time);
 	
+	cudaMemcpy(P, d_P, size, cudaMemcpyDeviceToHost);
+
 	cudaFree(d_M);
 	cudaFree(d_N);
 	cudaFree(d_P);
 }
 
 int main(int argc, char* argv[]) {
-	int Width = 750;
+	int Width = 4500;
 	int size = Width * Width * sizeof(float);
 	float* M = (float*)malloc(size * sizeof(float));
 	float* N = (float*)malloc(size * sizeof(float));
@@ -78,14 +95,11 @@ int main(int argc, char* argv[]) {
 		N[i] = ((float)rand() / RAND_MAX) * 100;
 	}
 
-	matMul(M, N, P_g, Width);
-
-	cudaEvent_t start, stop;
-	cudaEventCreate(&start);
-	cudaEventCreate(&stop);
-	cudaDeviceSynchronize();
-
-	cudaEventRecord(start, 0);
+	for (int i = 0; i < 3; i++) {
+		matMul(M, N, P_g, Width);
+	}
+	//matMul(M, N, P_g, Width);
+	printf("Mat Mul time (ms): %f, %f, %f \n", test_res[0], test_res[1], test_res[2]);
 
 	for (int i = 0; i < Width; i++) {
 		for (int j = 0; j < Width; j++) {
@@ -94,16 +108,10 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	}
-	cudaEventRecord(stop, 0);
-	cudaEventSynchronize(stop);
-
-	float time;
-	cudaEventElapsedTime(&time, start, stop);
-	printf("Mat Mult CPU (ms): %f \n", time);
 
 	cudaDeviceSynchronize();
 	int failed = 0;
-	for (int i = 0; i < Width*Width; i++) {
+	for (int i = 0; i < Width * Width; i++) {
 		//printf("CPU: %f, GPU: %f \n", P_c[i], P_g[i]);
 		if (abs(P_c[i] - P_g[i]) > 0.0001) {
 			failed = 1;
