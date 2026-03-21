@@ -5,14 +5,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 #define BLOCK_WIDTH 25
+#define TILE_WIDTH 2
 
 float test_res[3];
 int rep = 0;
 
 __global__ void matMulKernel(float* M, float* N, float* P, int Width) {
+	__shared__ float Mds[TILE_WIDTH][TILE_WIDTH];
+	__shared__ float Nds[TILE_WIDTH][TILE_WIDTH];
 
 	int Row = blockIdx.y * blockDim.y + threadIdx.y;
 	int Col = blockIdx.x * blockDim.x + threadIdx.x;
+	float Pvalue = 0;
+	// written up to here
 
 	if (Row < Width && Col < Width) {
 		float Pvalue = 0;
@@ -60,7 +65,7 @@ void matMul(float* M, float* N, float* P, int Width) {
 	test_res[rep] = time;
 	rep++;
 	printf("Mat Mul kernel Time (ms): %f \n", time);
-	
+
 	cudaMemcpy(P, d_P, size, cudaMemcpyDeviceToHost);
 
 	cudaFree(d_M);
