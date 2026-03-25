@@ -14,20 +14,31 @@ __global__ void matMulKernel(float* M, float* N, float* P, int Width) {
 	__shared__ float Mds[TILE_WIDTH][TILE_WIDTH];
 	__shared__ float Nds[TILE_WIDTH][TILE_WIDTH];
 
-	int Row = blockIdx.y * blockDim.y + threadIdx.y;
-	int Col = blockIdx.x * blockDim.x + threadIdx.x;
+	int bx = blockIdx.x; int by = blockIdx.y;
+	int tx = threadIdx.x; int ty = threadIdx.y;
+
+	int Row = by * TILE_WIDTH + ty;
+	int Col = bx * TILE_WIDTH + tx;
 	float Pvalue = 0;
-	// written up to here
 
-	if (Row < Width && Col < Width) {
-		float Pvalue = 0;
+	// loop through phases
+	for (int ph = 0; ph < Width / TILE_WIDTH; ph++) {
+		// each thread loads one element into shared memory
+		Mds[ty][tx] = M[Row * Width + ph * TILE_WIDTH + tx];
+		Nds[ty][tx] = N[(ph * TILE_WIDTH + ty) * Width + Col];
+		
+		//sync threads here to ensure everything that is needed for this phase is loaded into shared memory
+		__synchthreads();
 
-		for (int k = 0; k < Width; ++k) {
-			Pvalue += M[Row * Width + k] * N[k * Width + Col];
+		// perform matrix mult. for that tile
+		for (int k = 0; k < TILE_WIDTH; ++k) {
+			Pvalue += Mds[ty][k] * Nds[k][tx];
 		}
-		P[Row * Width + Col] = Pvalue;
+		__synchthreads();
 	}
 
+	P[Row * Width + Col] = Pvalue;
+	// written up to here
 }
 
 void matMul(float* M, float* N, float* P, int Width) {
@@ -43,6 +54,7 @@ void matMul(float* M, float* N, float* P, int Width) {
 	cudaMemcpy(d_M, M, size, cudaMemcpyHostToDevice);
 	cudaMemcpy(d_N, N, size, cudaMemcpyHostToDevice);
 
+	// im pretty sure in this case I just replace block_width with tile_width and it will work!
 	int NumBlocks = Width / BLOCK_WIDTH;
 	if (Width % BLOCK_WIDTH) NumBlocks++;
 
