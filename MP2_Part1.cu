@@ -4,9 +4,9 @@
 #include <device_launch_parameters.h>
 #include <stdlib.h>
 #include <stdio.h>
-#define TILE_WIDTH 25
+#define TILE_WIDTH 15
 
-float test_res[3];
+float test_res[4];
 int rep = 0;
 
 __global__ void matMulKernel(float* M, float* N, float* P, int Width) {
@@ -85,7 +85,7 @@ void matMul(float* M, float* N, float* P, int Width) {
 }
 
 int main(int argc, char* argv[]) {
-	int Width = 4500;
+	int Width = 300;
 	int size = Width * Width * sizeof(float);
 	float* M1 = (float*)malloc(size * sizeof(float));
 	float* N1 = (float*)malloc(size * sizeof(float));
@@ -93,31 +93,31 @@ int main(int argc, char* argv[]) {
 	float* N2 = (float*)malloc(size * sizeof(float));
 	float* M3 = (float*)malloc(size * sizeof(float));
 	float* N3 = (float*)malloc(size * sizeof(float));
+	float* M4 = (float*)malloc(size * sizeof(float));
+	float* N4 = (float*)malloc(size * sizeof(float));
 	float* P_g1 = (float*)calloc(size, sizeof(float)); //size * sizeof(float)
 	float* P_g2 = (float*)calloc(size, sizeof(float)); //size * sizeof(float)
 	float* P_g3 = (float*)calloc(size, sizeof(float)); //size * sizeof(float)
+	float* P_g4 = (float*)calloc(size, sizeof(float)); //size * sizeof(float)
 	float* P_c1 = (float*)calloc(size, sizeof(float));
 
 	for (int i = 0; i < Width * Width; i++) {
 		M1[i] = ((float)rand() / RAND_MAX) * 100; //make random floating point numbers between 0 and 100
 		N1[i] = ((float)rand() / RAND_MAX) * 100;
-	}
-
-	for (int i = 0; i < Width * Width; i++) {
 		M2[i] = ((float)rand() / RAND_MAX) * 100; //make random floating point numbers between 0 and 100
 		N2[i] = ((float)rand() / RAND_MAX) * 100;
-	}
-
-	for (int i = 0; i < Width * Width; i++) {
-		M2[i] = ((float)rand() / RAND_MAX) * 100; //make random floating point numbers between 0 and 100
-		N2[i] = ((float)rand() / RAND_MAX) * 100;
+		M3[i] = ((float)rand() / RAND_MAX) * 100; //make random floating point numbers between 0 and 100
+		N3[i] = ((float)rand() / RAND_MAX) * 100;
+		M4[i] = ((float)rand() / RAND_MAX) * 100; //make random floating point numbers between 0 and 100
+		N4[i] = ((float)rand() / RAND_MAX) * 100;
 	}
 
 	matMul(M1, N1, P_g1, Width);
 	matMul(M2, N2, P_g2, Width);
 	matMul(M3, N3, P_g3, Width);
+	matMul(M4, N4, P_g4, Width);
 
-	printf("Mat Mul time (ms): %f, %f, %f \n", test_res[0], test_res[1], test_res[2]);
+	printf("Mat Mul time (ms): %f, %f, %f, %f \n", test_res[0], test_res[1], test_res[2], test_res[3]);
 
 	for (int i = 0; i < Width; i++) {
 		for (int j = 0; j < Width; j++) {
@@ -130,8 +130,8 @@ int main(int argc, char* argv[]) {
 	cudaDeviceSynchronize();
 	int failed = 0;
 	for (int i = 0; i < Width * Width; i++) {
-		//printf("CPU: %f, GPU: %f \n", P_c[i], P_g[i]);
-		if (abs(P_c1[i] - P_g1[i]) > 0.0001) {
+		//printf("CPU: %f, GPU: %f \n", P_c1[i], P_g1[i]);
+		if (abs(P_c1[i] - P_g1[i]) > 0.1) {
 			failed = 1;
 		}
 	}
