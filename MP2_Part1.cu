@@ -4,8 +4,7 @@
 #include <device_launch_parameters.h>
 #include <stdlib.h>
 #include <stdio.h>
-#define BLOCK_WIDTH 25
-#define TILE_WIDTH 2
+#define TILE_WIDTH 25
 
 float test_res[3];
 int rep = 0;
@@ -26,15 +25,15 @@ __global__ void matMulKernel(float* M, float* N, float* P, int Width) {
 		// each thread loads one element into shared memory
 		Mds[ty][tx] = M[Row * Width + ph * TILE_WIDTH + tx];
 		Nds[ty][tx] = N[(ph * TILE_WIDTH + ty) * Width + Col];
-		
+
 		//sync threads here to ensure everything that is needed for this phase is loaded into shared memory
-		__synchthreads();
+		__syncthreads();
 
 		// perform matrix mult. for that tile
 		for (int k = 0; k < TILE_WIDTH; ++k) {
 			Pvalue += Mds[ty][k] * Nds[k][tx];
 		}
-		__synchthreads();
+		__syncthreads();
 	}
 
 	P[Row * Width + Col] = Pvalue;
@@ -88,26 +87,42 @@ void matMul(float* M, float* N, float* P, int Width) {
 int main(int argc, char* argv[]) {
 	int Width = 4500;
 	int size = Width * Width * sizeof(float);
-	float* M = (float*)malloc(size * sizeof(float));
-	float* N = (float*)malloc(size * sizeof(float));
-	float* P_g = (float*)calloc(size, sizeof(float)); //size * sizeof(float)
-	float* P_c = (float*)calloc(size, sizeof(float));
+	float* M1 = (float*)malloc(size * sizeof(float));
+	float* N1 = (float*)malloc(size * sizeof(float));
+	float* M2 = (float*)malloc(size * sizeof(float));
+	float* N2 = (float*)malloc(size * sizeof(float));
+	float* M3 = (float*)malloc(size * sizeof(float));
+	float* N3 = (float*)malloc(size * sizeof(float));
+	float* P_g1 = (float*)calloc(size, sizeof(float)); //size * sizeof(float)
+	float* P_g2 = (float*)calloc(size, sizeof(float)); //size * sizeof(float)
+	float* P_g3 = (float*)calloc(size, sizeof(float)); //size * sizeof(float)
+	float* P_c1 = (float*)calloc(size, sizeof(float));
 
 	for (int i = 0; i < Width * Width; i++) {
-		M[i] = ((float)rand() / RAND_MAX) * 100; //make random floating point numbers between 0 and 100
-		N[i] = ((float)rand() / RAND_MAX) * 100;
+		M1[i] = ((float)rand() / RAND_MAX) * 100; //make random floating point numbers between 0 and 100
+		N1[i] = ((float)rand() / RAND_MAX) * 100;
 	}
 
-	for (int i = 0; i < 3; i++) {
-		matMul(M, N, P_g, Width);
+	for (int i = 0; i < Width * Width; i++) {
+		M2[i] = ((float)rand() / RAND_MAX) * 100; //make random floating point numbers between 0 and 100
+		N2[i] = ((float)rand() / RAND_MAX) * 100;
 	}
-	//matMul(M, N, P_g, Width);
+
+	for (int i = 0; i < Width * Width; i++) {
+		M2[i] = ((float)rand() / RAND_MAX) * 100; //make random floating point numbers between 0 and 100
+		N2[i] = ((float)rand() / RAND_MAX) * 100;
+	}
+
+	matMul(M1, N1, P_g1, Width);
+	matMul(M2, N2, P_g2, Width);
+	matMul(M3, N3, P_g3, Width);
+
 	printf("Mat Mul time (ms): %f, %f, %f \n", test_res[0], test_res[1], test_res[2]);
 
 	for (int i = 0; i < Width; i++) {
 		for (int j = 0; j < Width; j++) {
 			for (int k = 0; k < Width; k++) {
-				P_c[i * Width + j] += M[i * Width + k] * N[k * Width + j];
+				P_c1[i * Width + j] += M1[i * Width + k] * N1[k * Width + j];
 			}
 		}
 	}
@@ -116,7 +131,7 @@ int main(int argc, char* argv[]) {
 	int failed = 0;
 	for (int i = 0; i < Width * Width; i++) {
 		//printf("CPU: %f, GPU: %f \n", P_c[i], P_g[i]);
-		if (abs(P_c[i] - P_g[i]) > 0.0001) {
+		if (abs(P_c1[i] - P_g1[i]) > 0.0001) {
 			failed = 1;
 		}
 	}
