@@ -55,11 +55,11 @@ void matMul(float* M, float* N, float* P, int Width) {
 	cudaMemcpy(d_N, N, size, cudaMemcpyHostToDevice);
 
 	// im pretty sure in this case I just replace block_width with tile_width and it will work!
-	int NumBlocks = Width / BLOCK_WIDTH;
-	if (Width % BLOCK_WIDTH) NumBlocks++;
+	int NumBlocks = Width / TILE_WIDTH;
+	if (Width % TILE_WIDTH) NumBlocks++;
 
 	dim3 dimGrid(NumBlocks, NumBlocks);
-	dim3 dimBlock(BLOCK_WIDTH, BLOCK_WIDTH);
+	dim3 dimBlock(TILE_WIDTH, TILE_WIDTH);
 
 	cudaEvent_t start, stop;
 	cudaEventCreate(&start);
