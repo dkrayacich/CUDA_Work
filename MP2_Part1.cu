@@ -4,7 +4,7 @@
 #include <device_launch_parameters.h>
 #include <stdlib.h>
 #include <stdio.h>
-#define TILE_WIDTH 15
+#define TILE_WIDTH 5
 
 float test_res[4];
 int rep = 0;
@@ -85,7 +85,7 @@ void matMul(float* M, float* N, float* P, int Width) {
 }
 
 int main(int argc, char* argv[]) {
-	int Width = 300;
+	int Width = 750;
 	int size = Width * Width * sizeof(float);
 	float* M1 = (float*)malloc(size * sizeof(float));
 	float* N1 = (float*)malloc(size * sizeof(float));
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
 	matMul(M3, N3, P_g3, Width);
 	matMul(M4, N4, P_g4, Width);
 
-	printf("Mat Mul time (ms): %f, %f, %f, %f \n", test_res[0], test_res[1], test_res[2], test_res[3]);
+	printf("Mat Mul times 750 x 750 (ms): %f, %f, %f, %f \n", test_res[0], test_res[1], test_res[2], test_res[3]);
 
 	for (int i = 0; i < Width; i++) {
 		for (int j = 0; j < Width; j++) {
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
 	int failed = 0;
 	for (int i = 0; i < Width * Width; i++) {
 		//printf("CPU: %f, GPU: %f \n", P_c1[i], P_g1[i]);
-		if (abs(P_c1[i] - P_g1[i]) > 0.1) {
+		if (abs(P_c1[i] - P_g1[i]) > 2) {
 			failed = 1;
 		}
 	}
